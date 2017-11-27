@@ -72,9 +72,9 @@ namespace ExcelToSql
 
                 insertSql = strSqlTryBegin + insertSql;
                 string values = "";
-                for (int i = r*1000+1; i <= rows; i++)
+                for (int i = r * 1000 + 1; i <= rows; i++)
                 {
-                    if (i - (r*1000 + 1) >= 1000)
+                    if (i - (r * 1000 + 1) >= 1000)
                     {
                         break;
                     }
@@ -83,7 +83,8 @@ namespace ExcelToSql
                         (dbName == "ims_invt_unit_en8846" && i == 1) ||
                         (dbName == "skl_portfolio_en8846" && i == 1) ||
                         (dbName == "cmn_equity_en8846" && i == 1) ||
-                        (dbName == "ims_bank_acc_en8846" && i == 1))
+                        (dbName == "ims_bank_acc_en8846" && i == 1) ||
+                        (dbName == "cmn_region_en8846" && i==1))
                     {
                         continue;
                     }
@@ -107,11 +108,11 @@ namespace ExcelToSql
                             }
                             else if (xlRange.Cells[i, j].Value.ToString() == "admin" || xlRange.Cells[i,j].Value.ToString() == "ETL")
                             {
-                                value = "\'INIT\'";
+                                value = "@INIT";
                             }
                             else if (xlRange.Cells[i,j].Value.ToString().Contains("'"))
                             {
-                                value = "'" + ExcapeSingleQuote(xlRange.Cells[i, j].Value.ToString()) + "\'";
+                                value = "\'" + ExcapeSingleQuote(xlRange.Cells[i, j].Value.ToString()) + "\'";
                             }
                             else
                             {
@@ -163,7 +164,8 @@ namespace ExcelToSql
 
                 insertSql = insertSql + strSqlEndTry + strSqlCatch;
 
-                using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"D:\Document\國外帳務系統INIT\excel\INIT.sql", true))
+                //寫在bin裡面的
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(Environment.CurrentDirectory + @"\\AppData\INIT.sql", true))
                 {
                     file.WriteLine(insertSql);
                 }
