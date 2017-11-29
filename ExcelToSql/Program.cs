@@ -56,6 +56,7 @@ namespace ExcelToSql
             Console.WriteLine(xlRange.Rows.Count);
             Console.WriteLine(xlRange.Columns.Count);
             //var dbName = xlWorksheet.Name.Split('-').First();
+            var fileName = xlWorkbook.Name;
             var dbName = xlWorkbook.Name.Split('-').First() + "_en8846";
             int rows = xlRange.Rows.Count;
             //測試 row 可不可以省略空的行
@@ -64,13 +65,15 @@ namespace ExcelToSql
 
             for (int r = 0; r < Math.Ceiling(rows / 1000.00); r++)
             {
+                string strSqlDeclare = string.Format("--{0}\ndeclare @INITDATE datetime\nset @INITDATE = '2017/11/30'\ndeclare @INIT varchar(10)\nset @INIT = 'INIT'\n", fileName);
+
                 string strSqlTryBegin = string.Format("begin try\n");
 
                 string insertSql = String.Format("INSERT INTO {0}\nVALUES ", dbName);
 
                 string strCountSql = "";
 
-                insertSql = strSqlTryBegin + insertSql;
+                insertSql = strSqlDeclare + strSqlTryBegin + insertSql;
                 string values = "";
                 for (int i = r * 1000 + 1; i <= rows; i++)
                 {
@@ -96,27 +99,47 @@ namespace ExcelToSql
 
                         if (xlRange.Cells[i, j] != null && xlRange.Cells[i, j].Value2 != null)
                         {
-                            Console.Write(xlRange.Cells[i, j].Value.ToString() + "\t");
+                            Console.Write(xlRange.Cells[i, j].Value.ToString().Trim() + "\t");
 
+                            string cell = xlRange.Cells[i, j].Value.ToString().Trim();
                             //判斷是否為日期
-                            if (DateTime.TryParse(xlRange.Cells[i, j].Value.ToString(), out DateTime dt))
+                            //if (DateTime.TryParse(xlRange.Cells[i, j].Value.ToString(), out DateTime dt))
+                            //{
+                            //    //value = "\'" + dt.Date.ToString("yyyy/MM/dd") + "\'";
+
+                            //    //帶入變數
+                            //    value = "@INITDATE";
+                            //}
+                            //else if (xlRange.Cells[i, j].Value.ToString() == "admin" || xlRange.Cells[i,j].Value.ToString() == "ETL" || xlRange.Cells[i,j].Value.ToString() == "INIT")
+                            //{
+                            //    value = "@INIT";
+                            //}
+                            //else if (xlRange.Cells[i,j].Value.ToString().Contains("'"))
+                            //{
+                            //    value = "\'" + ExcapeSingleQuote(xlRange.Cells[i, j].Value.ToString().Trim()) + "\'";
+                            //}
+                            //else
+                            //{
+                            //    value = "\'" + xlRange.Cells[i, j].Value.ToString().Trim() + "\'";
+                            //}
+                            if (DateTime.TryParse(cell, out DateTime dt))
                             {
                                 //value = "\'" + dt.Date.ToString("yyyy/MM/dd") + "\'";
 
                                 //帶入變數
                                 value = "@INITDATE";
                             }
-                            else if (xlRange.Cells[i, j].Value.ToString() == "admin" || xlRange.Cells[i,j].Value.ToString() == "ETL")
+                            else if (cell == "admin" || cell == "ETL" || cell == "INIT")
                             {
                                 value = "@INIT";
                             }
-                            else if (xlRange.Cells[i,j].Value.ToString().Contains("'"))
+                            else if (cell.Contains("'"))
                             {
-                                value = "\'" + ExcapeSingleQuote(xlRange.Cells[i, j].Value.ToString()) + "\'";
+                                value = "\'" + ExcapeSingleQuote(cell) + "\'";
                             }
                             else
                             {
-                                value = "\'" + xlRange.Cells[i, j].Value.ToString() + "\'";
+                                value = "\'" + cell + "\'";
                             }
                         }
                         else
@@ -160,12 +183,12 @@ namespace ExcelToSql
 
                 var strSqlEndTry = string.Format("print '{0} - {1} insert success'\nend try\n", dbName, r);
 
-                var strSqlCatch = string.Format("begin catch\nprint '{0} - {1} insert failed'\nend catch\n", dbName, r);
+                var strSqlCatch = string.Format("begin catch\nprint '{0} - {1} insert failed'\nprint error_message()\nend catch\n", dbName, r);
 
                 insertSql = insertSql + strSqlEndTry + strSqlCatch;
 
                 //寫在bin裡面的
-                using (System.IO.StreamWriter file = new System.IO.StreamWriter(Environment.CurrentDirectory + @"\\AppData\INIT.sql", true))
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(Environment.CurrentDirectory + @"\\AppData\INIT_test.sql", true))
                 {
                     file.WriteLine(insertSql);
                 }
@@ -268,9 +291,9 @@ namespace ExcelToSql
             xlWorkbook.Close(false);
         }
 
-        public static void ExcapeSingleQuote(string str)
+        public static string ExcapeSingleQuote(string str)
         {
-            str.Replace("'", "''");
+            return str.Replace("'", "''");
         }
     }
 }
